@@ -97,11 +97,8 @@ export function useTaskActions(props: {
 
     return (
       <ActionPanel>
-        <Action.Open title="Open in Obsidian" target={obsidianUrl} />
-
         <Action
-          title="Toggle Status"
-          shortcut={{ modifiers: ["cmd"], key: "enter" }}
+          title="Complete Task"
           onAction={async () => {
             try {
               await toggleTaskStatus(task.id);
@@ -116,6 +113,12 @@ export function useTaskActions(props: {
               });
             }
           }}
+        />
+
+        <Action.Open
+          title="Open in Obsidian"
+          target={obsidianUrl}
+          shortcut={{ modifiers: ["cmd"], key: "o" }}
         />
 
         <Action
