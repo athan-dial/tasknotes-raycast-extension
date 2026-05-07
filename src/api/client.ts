@@ -6,7 +6,7 @@ import {
   APIError,
   FilterOptions,
 } from "../types";
-import { setCachedTasks } from "../cache";
+import { getCachedTasks, setCachedTasks } from "../cache";
 
 function getPreferences(): Preferences {
   return getPreferenceValues<Preferences>();
@@ -211,5 +211,90 @@ export async function fetchFilterOptions(): Promise<FilterOptions> {
     throw createAPIError(
       "Failed to fetch filter options: Network error or timeout",
     );
+  }
+}
+
+export interface UpdateTaskInput {
+  priority?: string;
+  due?: string | null;
+  scheduled?: string | null;
+  tags?: string[];
+}
+
+async function updateCachedTask(updated: Task): Promise<void> {
+  const cached = await getCachedTasks();
+  if (!cached) return;
+  await setCachedTasks(
+    cached.map((t) => {
+      if (t.id !== updated.id) return t;
+      return updated;
+    }),
+  );
+}
+
+export async function updateTask(
+  id: string,
+  patch: UpdateTaskInput,
+): Promise<Task> {
+  try {
+    const response = await fetchWithTimeout(
+      `${getBaseUrl()}/api/tasks/${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify(patch),
+      },
+    );
+
+    if (!response.ok) {
+      const error = createAPIError(
+        `Failed to update task: ${response.statusText}`,
+        String(response.status),
+      );
+      throw error;
+    }
+
+    const data = await response.json();
+    const task = (data.data?.task ?? data) as Task;
+    await updateCachedTask(task);
+    return task;
+  } catch (error) {
+    if (error && typeof error === "object" && "message" in error) {
+      throw error;
+    }
+    throw createAPIError("Failed to update task: Network error or timeout");
+  }
+}
+
+export async function toggleArchive(id: string): Promise<Task> {
+  try {
+    const response = await fetchWithTimeout(
+      `${getBaseUrl()}/api/tasks/${encodeURIComponent(id)}/archive`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(),
+      },
+    );
+
+    if (!response.ok) {
+      const error = createAPIError(
+        `Failed to toggle archive: ${response.statusText}`,
+        String(response.status),
+      );
+      throw error;
+    }
+
+    const data = await response.json();
+    const task = (data.data?.task ?? data) as Task;
+    await updateCachedTask(task);
+    return task;
+  } catch (error) {
+    if (error && typeof error === "object" && "message" in error) {
+      throw error;
+    }
+    throw createAPIError("Failed to toggle archive: Network error or timeout");
   }
 }
