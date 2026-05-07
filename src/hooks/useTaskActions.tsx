@@ -1,78 +1,219 @@
 import {
   Action,
   ActionPanel,
-  Icon,
   Toast,
-  open,
   showToast,
+  getPreferenceValues,
+  Keyboard,
 } from "@raycast/api";
-import { ReactElement } from "react";
-import { toggleTaskStatus } from "../api/client";
-import { Task } from "../types";
+import { usePromise } from "@raycast/utils";
+import type { ReactElement } from "react";
+import type { Preferences, PriorityOption, Task } from "../types";
+import { fetchFilterOptions, toggleTaskStatus } from "../api/client";
+import { DatePickerForm } from "../components/DatePickerForm";
+import { TagPickerForm } from "../components/TagPickerForm";
 
-export interface UseTaskActionsResult {
-  panel: (task: Task) => ReactElement;
+function getBaseUrl(): string {
+  const prefs = getPreferenceValues<Preferences>();
+  return `http://127.0.0.1:${prefs.apiPort}`;
 }
 
-export interface UseTaskActionsInput {
+function getAuthHeaders(): HeadersInit {
+  const prefs = getPreferenceValues<Preferences>();
+  return prefs.apiToken ? { Authorization: `Bearer ${prefs.apiToken}` } : {};
+}
+
+async function updateTask(
+  id: string,
+  patch: Partial<Pick<Task, "due" | "scheduled" | "tags" | "priority">>,
+): Promise<void> {
+  const response = await fetch(
+    `${getBaseUrl()}/api/tasks/${encodeURIComponent(id)}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify(patch),
+    },
+  );
+
+  if (!response.ok) {
+    const message = await response.text().catch(() => "");
+    throw new Error(
+      message || `Failed to update task: HTTP ${response.status}`,
+    );
+  }
+}
+
+async function toggleArchive(id: string): Promise<void> {
+  const response = await fetch(
+    `${getBaseUrl()}/api/tasks/${encodeURIComponent(id)}/toggle-archive`,
+    {
+      method: "POST",
+      headers: getAuthHeaders(),
+    },
+  );
+
+  if (!response.ok) {
+    const message = await response.text().catch(() => "");
+    throw new Error(
+      message || `Failed to toggle archive: HTTP ${response.status}`,
+    );
+  }
+}
+
+function getObsidianOpenUrl(task: Task): string {
+  return `obsidian://open?path=${encodeURIComponent(task.path)}`;
+}
+
+function byWeightAsc(a: PriorityOption, b: PriorityOption): number {
+  return a.weight - b.weight;
+}
+
+export function useTaskActions(props: {
   onMutate: () => Promise<void> | void;
-}
+}): { panel: (task: Task) => ReactElement } {
+  const { onMutate } = props;
+  const { data: filterOptions } = usePromise(fetchFilterOptions);
 
-function openInObsidian(task: Task) {
-  const encodedPath = encodeURIComponent(task.path);
-  open(`obsidian://open?file=${encodedPath}`);
-}
+  function panel(task: Task): ReactElement {
+    const obsidianUrl = getObsidianOpenUrl(task);
+    const prioritiesSorted = (filterOptions?.priorities ?? [])
+      .slice()
+      .sort(byWeightAsc);
+    const shortcutByPriorityId = new Map<string, Keyboard.Shortcut>();
 
-export function useTaskActions(
-  input: UseTaskActionsInput,
-): UseTaskActionsResult {
-  return {
-    panel: (task) => (
+    // First four by weight ascending get Cmd+1..4.
+    const firstFour = prioritiesSorted.slice(0, 4);
+    const keys = ["1", "2", "3", "4"] as const;
+    for (let i = 0; i < firstFour.length; i++) {
+      shortcutByPriorityId.set(firstFour[i].id, {
+        modifiers: ["cmd"],
+        key: keys[i],
+      });
+    }
+
+    return (
       <ActionPanel>
+        <Action.Open title="Open in Obsidian" target={obsidianUrl} />
+
         <Action
-          title="Open in Obsidian"
-          icon={Icon.Link}
-          onAction={() => openInObsidian(task)}
-        />
-        <Action
-          title="Complete Task"
-          icon={Icon.Checkmark}
+          title="Toggle Status"
           shortcut={{ modifiers: ["cmd"], key: "enter" }}
           onAction={async () => {
-            await showToast({
-              style: Toast.Style.Animated,
-              title: "Marking complete...",
-            });
             try {
               await toggleTaskStatus(task.id);
-              await showToast({
-                style: Toast.Style.Success,
-                title: "Task completed",
-                message: task.title,
-              });
-              await input.onMutate();
+              await onMutate();
             } catch (error) {
               const message =
-                error && typeof error === "object" && "message" in error
-                  ? String((error as { message: unknown }).message)
-                  : "Failed to complete task";
+                error instanceof Error ? error.message : String(error);
               await showToast({
                 style: Toast.Style.Failure,
-                title: "Error",
+                title: "Failed to toggle status",
                 message,
               });
             }
           }}
         />
+
         <Action
           title="Refresh"
-          icon={Icon.ArrowClockwise}
           shortcut={{ modifiers: ["cmd"], key: "r" }}
           onAction={async () => {
-            await input.onMutate();
+            try {
+              await onMutate();
+            } catch (error) {
+              const message =
+                error instanceof Error ? error.message : String(error);
+              await showToast({
+                style: Toast.Style.Failure,
+                title: "Failed to refresh",
+                message,
+              });
+            }
           }}
         />
+
+        <ActionPanel.Section title="Edit">
+          <Action.Push
+            title="Set Due Date"
+            shortcut={{ modifiers: ["cmd"], key: "d" }}
+            target={
+              <DatePickerForm
+                task={task}
+                field="due"
+                onDone={() => void onMutate()}
+              />
+            }
+          />
+          <Action.Push
+            title="Set Scheduled Date"
+            shortcut={{ modifiers: ["cmd", "shift"], key: "d" }}
+            target={
+              <DatePickerForm
+                task={task}
+                field="scheduled"
+                onDone={() => void onMutate()}
+              />
+            }
+          />
+          <Action.Push
+            title="Edit Tags"
+            shortcut={{ modifiers: ["cmd"], key: "t" }}
+            target={
+              <TagPickerForm task={task} onDone={() => void onMutate()} />
+            }
+          />
+          <Action
+            title="Toggle Archive"
+            shortcut={{ modifiers: ["cmd", "shift"], key: "a" }}
+            onAction={async () => {
+              try {
+                await toggleArchive(task.id);
+                await onMutate();
+              } catch (error) {
+                const message =
+                  error instanceof Error ? error.message : String(error);
+                await showToast({
+                  style: Toast.Style.Failure,
+                  title: "Failed to toggle archive",
+                  message,
+                });
+              }
+            }}
+          />
+        </ActionPanel.Section>
+
+        {filterOptions ? (
+          <ActionPanel.Section title="Priority">
+            {prioritiesSorted.map((opt) => (
+              <Action
+                key={opt.id}
+                title={opt.label}
+                shortcut={shortcutByPriorityId.get(opt.id)}
+                onAction={async () => {
+                  try {
+                    await updateTask(task.id, { priority: opt.value });
+                    await onMutate();
+                  } catch (error) {
+                    const message =
+                      error instanceof Error ? error.message : String(error);
+                    await showToast({
+                      style: Toast.Style.Failure,
+                      title: "Failed to set priority",
+                      message,
+                    });
+                  }
+                }}
+              />
+            ))}
+          </ActionPanel.Section>
+        ) : null}
       </ActionPanel>
-    ),
-  };
+    );
+  }
+
+  return { panel };
 }
