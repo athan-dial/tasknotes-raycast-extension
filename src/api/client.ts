@@ -164,16 +164,14 @@ export async function toggleTaskStatus(id: string): Promise<Task> {
       },
     );
 
-    if (!response.ok) {
-      const error = createAPIError(
-        `Failed to toggle task status: ${response.statusText}`,
+    const data = await response.json().catch(() => null);
+    if (!response.ok || (data && data.success === false)) {
+      throw createAPIError(
+        data?.error || `Failed to toggle task status: HTTP ${response.status}`,
         String(response.status),
       );
-      throw error;
     }
-
-    const data = await response.json();
-    return (data.data?.task ?? data) as Task;
+    return (data?.data?.task ?? data?.data ?? data) as Task;
   } catch (error) {
     if (error && typeof error === "object" && "message" in error) {
       throw error;

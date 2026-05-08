@@ -39,10 +39,10 @@ async function updateTask(
     },
   );
 
-  if (!response.ok) {
-    const message = await response.text().catch(() => "");
+  const data = await response.json().catch(() => null);
+  if (!response.ok || (data && data.success === false)) {
     throw new Error(
-      message || `Failed to update task: HTTP ${response.status}`,
+      data?.error || `Failed to update task: HTTP ${response.status}`,
     );
   }
 }
@@ -56,10 +56,10 @@ async function toggleArchive(id: string): Promise<void> {
     },
   );
 
-  if (!response.ok) {
-    const message = await response.text().catch(() => "");
+  const data = await response.json().catch(() => null);
+  if (!response.ok || (data && data.success === false)) {
     throw new Error(
-      message || `Failed to toggle archive: HTTP ${response.status}`,
+      data?.error || `Failed to toggle archive: HTTP ${response.status}`,
     );
   }
 }
