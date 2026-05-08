@@ -11,7 +11,9 @@ type ExtensionPreferences = {
   /** API Port - Port number for TaskNotes HTTP API */
   "apiPort": string,
   /** API Token - Authentication token for TaskNotes HTTP API (optional) */
-  "apiToken"?: string
+  "apiToken"?: string,
+  /** Obsidian Vault Name - Name of the Obsidian vault containing your tasks (used for obsidian:// URLs) */
+  "vaultName"?: string
 }
 
 /** Preferences accessible in all the extension's commands */

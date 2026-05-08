@@ -25,8 +25,10 @@ const PRIORITY_WEIGHT: Record<string, number> = {
   "": 0,
 };
 
-function weightPriority(priority: string | null | undefined): number {
-  const key = (priority ?? "").trim().toLowerCase();
+function weightPriority(priority: unknown): number {
+  const key = String(priority ?? "")
+    .trim()
+    .toLowerCase();
   return PRIORITY_WEIGHT[key] ?? 0;
 }
 
