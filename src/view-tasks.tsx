@@ -30,7 +30,10 @@ export default function ViewTasks() {
     }
   }, []);
 
-  const actions = useTaskActions({ onMutate: revalidate });
+  const actions = useTaskActions({
+    onMutate: revalidate,
+    sort: { label: sort.label, cycle: sort.cycle },
+  });
 
   useEffect(() => {
     void revalidate();

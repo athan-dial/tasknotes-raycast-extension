@@ -79,8 +79,9 @@ function byWeightAsc(a: PriorityOption, b: PriorityOption): number {
 
 export function useTaskActions(props: {
   onMutate: () => Promise<void> | void;
+  sort?: { label: string; cycle: () => void };
 }): { panel: (task: Task) => ReactElement } {
-  const { onMutate } = props;
+  const { onMutate, sort } = props;
   const { data: filterOptions } = usePromise(fetchFilterOptions);
 
   function panel(task: Task): ReactElement {
@@ -125,6 +126,14 @@ export function useTaskActions(props: {
           target={obsidianUrl}
           shortcut={{ modifiers: ["cmd"], key: "o" }}
         />
+
+        {sort ? (
+          <Action
+            title={`Cycle Sort (now: ${sort.label})`}
+            shortcut={{ modifiers: ["cmd"], key: "s" }}
+            onAction={() => sort.cycle()}
+          />
+        ) : null}
 
         <Action
           title="Refresh"
