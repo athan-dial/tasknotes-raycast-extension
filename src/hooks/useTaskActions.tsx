@@ -65,7 +65,12 @@ async function toggleArchive(id: string): Promise<void> {
 }
 
 function getObsidianOpenUrl(task: Task): string {
-  return `obsidian://open?path=${encodeURIComponent(task.path)}`;
+  const { vaultName } = getPreferenceValues<Preferences>();
+  const file = encodeURIComponent(task.path);
+  if (vaultName && vaultName.trim()) {
+    return `obsidian://open?vault=${encodeURIComponent(vaultName.trim())}&file=${file}`;
+  }
+  return `obsidian://open?file=${file}`;
 }
 
 function byWeightAsc(a: PriorityOption, b: PriorityOption): number {

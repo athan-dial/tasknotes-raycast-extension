@@ -26,6 +26,7 @@ export interface APIError {
 export interface Preferences {
   apiPort: string;
   apiToken?: string;
+  vaultName?: string;
 }
 
 export interface PriorityOption {

@@ -49,6 +49,13 @@
       "description": "Authentication token for TaskNotes HTTP API (optional)",
       "type": "password",
       "required": false
+    },
+    {
+      "name": "vaultName",
+      "title": "Obsidian Vault Name",
+      "description": "Name of the Obsidian vault containing your tasks (used for obsidian:// URLs)",
+      "type": "textfield",
+      "required": false
     }
   ],
   "dependencies": {

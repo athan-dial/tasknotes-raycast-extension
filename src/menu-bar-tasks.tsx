@@ -4,11 +4,12 @@ import {
   launchCommand,
   LaunchType,
   open,
+  getPreferenceValues,
 } from "@raycast/api";
 import { useEffect, useState } from "react";
 import { fetchTasks } from "./api/client";
 import { getCachedTasks } from "./cache";
-import { Task } from "./types";
+import { Preferences, Task } from "./types";
 
 const MAX_VISIBLE_TASKS = 5;
 
@@ -44,8 +45,13 @@ export default function MenuBarTasks() {
   const icon = taskCount === 0 ? Icon.CheckCircle : Icon.Circle;
 
   function openInObsidian(task: Task) {
-    const encodedPath = encodeURIComponent(task.path);
-    open(`obsidian://open?file=${encodedPath}`);
+    const { vaultName } = getPreferenceValues<Preferences>();
+    const file = encodeURIComponent(task.path);
+    const url =
+      vaultName && vaultName.trim()
+        ? `obsidian://open?vault=${encodeURIComponent(vaultName.trim())}&file=${file}`
+        : `obsidian://open?file=${file}`;
+    open(url);
   }
 
   function truncateTitle(title: string, maxLength = 40): string {
