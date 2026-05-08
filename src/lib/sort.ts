@@ -32,12 +32,12 @@ function weightPriority(priority: unknown): number {
   return PRIORITY_WEIGHT[key] ?? 0;
 }
 
-function compareIsoAsc(a: string, b: string): number {
-  return a.localeCompare(b);
+function compareIsoAsc(a: unknown, b: unknown): number {
+  return String(a ?? "").localeCompare(String(b ?? ""));
 }
 
-function compareIsoDesc(a: string, b: string): number {
-  return b.localeCompare(a);
+function compareIsoDesc(a: unknown, b: unknown): number {
+  return String(b ?? "").localeCompare(String(a ?? ""));
 }
 
 export const comparators: Record<SortMode, (a: Task, b: Task) => number> = {
@@ -56,7 +56,7 @@ export const comparators: Record<SortMode, (a: Task, b: Task) => number> = {
   },
   created: (a, b) => compareIsoDesc(a.dateCreated, b.dateCreated),
   modified: (a, b) => compareIsoDesc(a.dateModified, b.dateModified),
-  title: (a, b) => a.title.localeCompare(b.title),
+  title: (a, b) => String(a.title ?? "").localeCompare(String(b.title ?? "")),
 };
 
 export function sortTasks(tasks: Task[], mode: SortMode): Task[] {
