@@ -44,13 +44,18 @@ export default function ViewTasks() {
   );
   const visible = sort.sort(filter.apply(searchedTasks));
 
+  function projectSlug(project: string): string {
+    const cleaned = project.replace(/^\[\[|\]\]$/g, "");
+    const leaf = cleaned.split("/").pop() ?? cleaned;
+    return leaf.length > 18 ? leaf.slice(0, 17) + "…" : leaf;
+  }
+
   function getAccessories(task: Task): List.Item.Accessory[] {
     const accessories: List.Item.Accessory[] = [];
 
-    if (task.tags && task.tags.length > 0) {
-      for (const tagName of task.tags.slice(0, 3)) {
-        accessories.push({ tag: { value: tagName } });
-      }
+    const firstProject = task.projects?.[0];
+    if (firstProject) {
+      accessories.push({ tag: { value: projectSlug(firstProject) } });
     }
 
     if (task.priority && task.priority !== "none") {
@@ -82,7 +87,6 @@ export default function ViewTasks() {
           <List.Item
             key={task.id}
             title={task.title}
-            subtitle={task.projects?.[0]?.replace(/^\[\[|\]\]$/g, "")}
             accessories={getAccessories(task)}
             actions={actions.panel(task)}
           />
