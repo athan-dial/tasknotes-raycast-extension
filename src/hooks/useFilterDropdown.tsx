@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 import { fetchFilterOptions } from "../api/client";
 import type { Task } from "../types";
+import { isInboxTask, isTodayTask } from "../lib/views";
 
 export interface UseFilterDropdownResult {
   dropdown: ReactElement;
@@ -12,6 +13,7 @@ export interface UseFilterDropdownResult {
 
 type FilterSelection =
   | "all"
+  | `view:${string}`
   | `status:${string}`
   | `priority:${string}`
   | `project:${string}`
@@ -46,6 +48,11 @@ export function useFilterDropdown(): UseFilterDropdownResult {
       >
         <List.Dropdown.Section title="All">
           <List.Dropdown.Item title="All" value="all" />
+        </List.Dropdown.Section>
+
+        <List.Dropdown.Section title="Views">
+          <List.Dropdown.Item title="Inbox" value="view:inbox" />
+          <List.Dropdown.Item title="Today" value="view:today" />
         </List.Dropdown.Section>
 
         <List.Dropdown.Section title="Status">
@@ -103,6 +110,11 @@ export function useFilterDropdown(): UseFilterDropdownResult {
       const { kind, value } = parseSelection(selected);
 
       if (kind === "all") return tasks;
+      if (kind === "view") {
+        if (value === "inbox") return tasks.filter(isInboxTask);
+        if (value === "today") return tasks.filter(isTodayTask);
+        return tasks;
+      }
       if (kind === "status") return tasks.filter((t) => t.status === value);
       if (kind === "priority") return tasks.filter((t) => t.priority === value);
       if (kind === "project")
