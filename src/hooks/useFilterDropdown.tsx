@@ -56,10 +56,22 @@ export function useFilterDropdown(): UseFilterDropdownResult {
         </List.Dropdown.Section>
 
         <List.Dropdown.Section title="Status">
-          <List.Dropdown.Item title="Open" value="status:open" />
-          <List.Dropdown.Item title="In Progress" value="status:in-progress" />
-          <List.Dropdown.Item title="Done" value="status:done" />
-          <List.Dropdown.Item title="Cancelled" value="status:cancelled" />
+          {showLoading ? (
+            <List.Dropdown.Item title="Loading…" value="all" />
+          ) : showError ? (
+            <List.Dropdown.Item title="Failed to load" value="all" />
+          ) : (
+            (filterOptions?.statuses ?? [])
+              .slice()
+              .sort((a, b) => a.order - b.order)
+              .map((s) => (
+                <List.Dropdown.Item
+                  key={s.id}
+                  title={s.label}
+                  value={`status:${s.value}`}
+                />
+              ))
+          )}
         </List.Dropdown.Section>
 
         <List.Dropdown.Section title="Priority">

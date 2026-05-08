@@ -37,8 +37,18 @@ export interface PriorityOption {
   weight: number;
 }
 
+export interface StatusOption {
+  id: string;
+  value: string;
+  label: string;
+  color: string;
+  isCompleted: boolean;
+  order: number;
+}
+
 export interface FilterOptions {
   projects: string[];
   tags: string[];
   priorities: PriorityOption[];
+  statuses: StatusOption[];
 }

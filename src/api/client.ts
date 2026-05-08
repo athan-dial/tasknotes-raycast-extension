@@ -95,7 +95,7 @@ export async function fetchTasks(filters?: FetchTasksFilters): Promise<Task[]> {
 
     if (filters) {
       if (filters.completed !== undefined) {
-        const completedStatuses = ["done"];
+        const completedStatuses = ["done", "cancelled"];
         tasks = tasks.filter((t) =>
           filters.completed
             ? completedStatuses.includes(t.status)
