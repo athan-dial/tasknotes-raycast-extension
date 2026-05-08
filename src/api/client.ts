@@ -240,7 +240,7 @@ export async function updateTask(
     const response = await fetchWithTimeout(
       `${getBaseUrl()}/api/tasks/${encodeURIComponent(id)}`,
       {
-        method: "PATCH",
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           ...getAuthHeaders(),

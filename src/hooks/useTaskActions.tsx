@@ -30,7 +30,7 @@ async function updateTask(
   const response = await fetch(
     `${getBaseUrl()}/api/tasks/${encodeURIComponent(id)}`,
     {
-      method: "PATCH",
+      method: "PUT",
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeaders(),
